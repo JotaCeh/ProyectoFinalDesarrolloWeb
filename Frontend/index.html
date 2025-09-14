@@ -30,24 +30,31 @@
                 <div class="movimientos">
                     <p>Movimientos</p>
                 </div>
+                
                 <!-- Imagen decorativa de robot -->
                 <div class="robot-img"></div>
+                
+
             </div>
+            
         </div>
+        
     </div>
-   <script>
+<script>
 /* ---------- Datos del tablero ---------- */
 const filas = 5;
 const columnas = 5;
 
-const matriz = [
-  [0, 0, 0, 0, 0],
-  [0, 1, 1, 1, 0],
-  [0, 1, 0, 1, 0],
-  [0, 1, 0, 1, 0],
-  [2, 1, 0, 0, 0]
-];
-// 0: vacío, 1: verde (pista), 2: inicio del robot
+let matrizGuardada = localStorage.getItem('pistaGuardada');
+let matriz = matrizGuardada
+  ? JSON.parse(matrizGuardada)
+  : [
+      [0, 0, 0, 0, 0],
+      [0, 1, 1, 1, 0],
+      [0, 1, 0, 1, 0],
+      [0, 1, 0, 1, 0],
+      [2, 1, 0, 0, 0]
+    ];
 
 /* ---------- Variables globales ---------- */
 const tablero = document.getElementById('tablero');
@@ -58,8 +65,11 @@ let robotCol = 0;
 let inicioFila = 0;
 let inicioCol = 0;
 
-const queue = []; // Cola de comandos: 'mover_arriba', 'mover_abajo', ...
-/* Creamos visualmente el tablero (cada celda) */
+const queue = []; // Cola de comandos
+const celdas = [];
+const movimientosDiv = document.querySelector('.movimientos');
+
+/* ---------- Crear tablero visual ---------- */
 for (let i = 0; i < filas; i++) {
   for (let j = 0; j < columnas; j++) {
     const cell = document.createElement('div');
@@ -67,166 +77,224 @@ for (let i = 0; i < filas; i++) {
     if (matriz[i][j] === 1) cell.classList.add('verde');
     if (matriz[i][j] === 2) {
       cell.classList.add('inicio');
-      cell.textContent = ''; // el texto INICIO se muestra por pseudo-elemento CSS
+      cell.textContent = ''; 
       inicioFila = i;
       inicioCol = j;
       robotFila = i;
       robotCol = j;
-      cell.classList.add('robot'); // robot visible al inicio
+      cell.classList.add('robot');
+      // Mostrar "INICIO"
+      const spanInicio = document.createElement('span');
+      spanInicio.textContent = 'INICIO';
+      spanInicio.style.fontSize = '9px';
+      spanInicio.style.position = 'absolute';
+      spanInicio.style.top = '2px';
+      spanInicio.style.left = '2px';
+      spanInicio.style.color = '#0a0';
+      cell.appendChild(spanInicio);
+      cell.style.position = 'relative';
     }
     tablero.appendChild(cell);
+    celdas.push(cell);
   }
 }
 
-const celdas = tablero.querySelectorAll('.celda');
-const movimientosDiv = document.querySelector('.movimientos');
-
-/* ---------- Helpers para UI de movimientos ---------- */
+/* ---------- Helpers UI movimientos ---------- */
 function resetMovimientosUI() {
   movimientosDiv.innerHTML = '<p>Movimientos</p>';
 }
-
 function appendMovimientoQueued(texto) {
   const p = document.createElement('p');
   p.textContent = texto;
   p.classList.add('queued');
   movimientosDiv.appendChild(p);
 }
-
-/* Añadir comando a la cola (no ejecuta) */
 function queueCommand(nombre) {
   queue.push(nombre);
   appendMovimientoQueued(nombre);
 }
 
-/* ---------- Event listeners de las flechas: solo encolan ---------- */
+/* ---------- Flechas solo encolan ---------- */
 document.querySelector('.btn.up').addEventListener('click', () => queueCommand('mover_arriba'));
 document.querySelector('.btn.down').addEventListener('click', () => queueCommand('mover_abajo'));
 document.querySelector('.btn.left').addEventListener('click', () => queueCommand('mover_izquierda'));
 document.querySelector('.btn.right').addEventListener('click', () => queueCommand('mover_derecha'));
 
-/* Deshabilitar/habilitar controles (para evitar cambios mientras ejecuta) */
+/* ---------- Deshabilitar controles ---------- */
 function setControlsDisabled(value) {
-  // Flechas
   document.querySelectorAll('.btn.up, .btn.down, .btn.left, .btn.right').forEach(b => b.disabled = value);
-  // Barras inferiores
   document.querySelector('.ejecutar').disabled = value;
   document.querySelector('.reiniciar').disabled = value;
   document.querySelector('.configurar').disabled = value;
 }
 
-/* ---------- Lógica de movimiento real ---------- */
+/* ---------- Movimiento real ---------- */
 function canStepTo(fila, col) {
-  // límites
   if (fila < 0 || fila >= filas || col < 0 || col >= columnas) return false;
-  // la celda debe ser pista (1) o inicio (2)
   const v = matriz[fila][col];
   return v === 1 || v === 2;
 }
 
 function moveRobotTo(nf, nc) {
-  // quitar clase robot de la celda actual
-  const celdaActual = celdas[robotFila * columnas + robotCol];
-  celdaActual.classList.remove('robot');
-
-  // actualizar coords
+  celdas[robotFila * columnas + robotCol].classList.remove('robot');
   robotFila = nf;
   robotCol = nc;
-
-  // agregar clase robot a la nueva celda
-  const nueva = celdas[robotFila * columnas + robotCol];
-  nueva.classList.add('robot');
+  celdas[robotFila * columnas + robotCol].classList.add('robot');
 }
+
+/* ---------- Modal Derrota ---------- */
 function mostrarModalDerrota() {
   const modal = document.getElementById('modalDerrota');
   modal.style.display = 'flex';
-
   document.getElementById('cerrarModal').onclick = () => {
     modal.style.display = 'none';
+    reiniciarRobot();
   };
 }
 
+/* ---------- Modal Victoria ---------- */
+function mostrarModalVictoria() {
+  const modal = document.getElementById('modalVictoria');
+  modal.style.display = 'flex';
+  document.getElementById('cerrarVictoria').onclick = () => {
+    modal.style.display = 'none';
+    reiniciarRobot();
+  };
+}
 
-/* Ejecuta la cola secuencialmente */
+/* ---------- Ejecutar cola ---------- */
 async function ejecutarCola() {
-  if (queue.length === 0) return; // nada que hacer
+  if (queue.length === 0) return;
   setControlsDisabled(true);
-
-  // obtenemos todos los <p> (0 = cabecera "Movimientos")
   const listaP = () => movimientosDiv.querySelectorAll('p');
+
+  const pistaGuardada = JSON.parse(localStorage.getItem('pistaVerde'));
+  const final = pistaGuardada?.final;
 
   for (let i = 0; i < queue.length; i++) {
     const cmd = queue[i];
-    const p = listaP()[i + 1]; // +1 porque el primer <p> es "Movimientos"
-    if (p) {
-      p.classList.remove('queued');
-      p.classList.add('current');
-    }
+    const p = listaP()[i + 1];
+    if (p) { p.classList.remove('queued'); p.classList.add('current'); }
 
-    // calcular nueva posición según comando
     let nf = robotFila, nc = robotCol;
     if (cmd === 'mover_arriba') nf--;
     if (cmd === 'mover_abajo') nf++;
     if (cmd === 'mover_izquierda') nc--;
     if (cmd === 'mover_derecha') nc++;
 
-    // validar paso
     if (!canStepTo(nf, nc)) {
-      if (p) {
-        p.classList.remove('current');
-        p.classList.add('failed');
-      }
+      if (p) { p.classList.remove('current'); p.classList.add('failed'); }
       mostrarModalDerrota();
-    break; // detener ejecución
+      break;
     }
 
-    // mover visualmente
     moveRobotTo(nf, nc);
+    if (p) { p.classList.remove('current'); p.classList.add('done'); }
 
-    // marcar como hecho
-    if (p) {
-      p.classList.remove('current');
-      p.classList.add('done');
+    // Verificar victoria
+    if (final && robotFila === final[0] && robotCol === final[1]) {
+      mostrarModalVictoria();
+      break;
     }
 
-    // pequeña pausa para ver el movimiento (400ms)
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 1000));
   }
-
-  // al terminar (exitoso o fallo) dejamos controles activos
   setControlsDisabled(false);
-  // si quieres vaciar la cola tras la ejecución, descomenta:
-  // queue.length = 0;
 }
 
-/* ---------- Botón Ejecutar ---------- */
+/* ---------- Botones ---------- */
 document.querySelector('.ejecutar').addEventListener('click', ejecutarCola);
+document.querySelector('.reiniciar').addEventListener('click', reiniciarRobot);
+document.querySelector('.configurar').addEventListener('click', () => {window.location.href = 'configurar.html';});
 
-/* ---------- Botón Reiniciar: vacía cola y regresa a inicio ---------- */
-document.querySelector('.reiniciar').addEventListener('click', () => {
-  // vaciar cola
+
+/* ---------- Reiniciar robot y movimientos ---------- */
+function reiniciarRobot() {
   queue.length = 0;
   resetMovimientosUI();
-
-  // quitar robot de su posición actual
-  const cur = celdas[robotFila * columnas + robotCol];
-  cur.classList.remove('robot');
-
-  // regresar a inicio
+  celdas.forEach(c => c.classList.remove('robot'));
   robotFila = inicioFila;
   robotCol = inicioCol;
+  celdas[robotFila * columnas + robotCol].classList.add('robot');
+}
 
-  const inicioCelda = celdas[robotFila * columnas + robotCol];
-  inicioCelda.classList.add('robot');
+/* ---------- Inicial ---------- */
+resetMovimientosUI();
+
+/* ---------- Manejo de pistas y final ---------- */
+const pistas = JSON.parse(localStorage.getItem('pistas') || '[]');
+let pistaActualIndex = 0;
+if (pistas.length > 0) {
+  // Elegir pista aleatoria
+  pistaActualIndex = Math.floor(Math.random() * pistas.length);
+  cargarPista(pistaActualIndex);
+}
+
+function cargarPista(index) {
+  matriz = Array(filas).fill(0).map(()=>Array(columnas).fill(0));
+
+  celdas.forEach(c => {
+    c.classList.remove('verde','final');
+    // Limpiar texto de la celda, salvo el INICIO
+    const spanInicio = c.querySelector('span');
+    if (!spanInicio) c.textContent = '';
+  });
+
+  const pista = pistas[index];
+  if (!pista) return;
+
+  // Camino
+  pista.camino.forEach(([f,c]) => {
+    matriz[f][c] = 1;
+    celdas[f*columnas + c].classList.add('verde');
+  });
+
+  // Celda final
+  const [ff, fc] = pista.final;
+  matriz[ff][fc] = 1;
+  const celdaFinal = celdas[ff*columnas + fc];
+  celdaFinal.classList.add('final');
+  celdaFinal.textContent = 'FINAL';
+}
+
+
+// Botón cambiar pista
+const btnCambiar = document.createElement('button');
+btnCambiar.textContent = 'Cambiar pista';
+btnCambiar.id = 'cambiarPista';
+document.querySelector('.panel-lateral').appendChild(btnCambiar);
+
+btnCambiar.addEventListener('click', () => {
+  if (pistas.length <= 1) {
+    alert('Solo hay una pista disponible');
+    return;
+  }
+  let nuevo;
+  do { nuevo = Math.floor(Math.random() * pistas.length); } while (nuevo === pistaActualIndex);
+  pistaActualIndex = nuevo;
+  cargarPista(pistaActualIndex);
+  reiniciarRobot();
 });
 
-/* ---------- Inicial: aseguramos header en movimientos ---------- */
-resetMovimientosUI();
+// Cargar la primera pista automáticamente
+if (pistas.length > 0) {
+  cargarPista(pistaActualIndex);
+}
 </script>
+
+
+<div id="modalVictoria" class="modal-derrota">
+  <div class="modal-contenido">
+    <img src="./images/robot_decorativo.png" class="robot-modal-img">
+    <h2>¡Ganaste!</h2>
+    <button id="cerrarVictoria">Cerrar</button>
+  </div>
+</div>
+
 <!-- Modal de derrota -->
 <div id="modalDerrota" class="modal-derrota">
   <div class="modal-contenido">
-    <img src='./images/robot_decorativo.png' alt="Robot" class="robot-img">
+
     <h2>¡Perdiste!</h2>
     <button id="cerrarModal">Cerrar</button>
   </div>

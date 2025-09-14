@@ -225,6 +225,7 @@ h1 {
     z-index: 10;
 }
 
+
 .celda.inicio {
   background-color: #4caf50;       /* Verde de fondo */
   position: relative;              /* Para colocar el texto dentro */
@@ -314,5 +315,44 @@ button:disabled {
   color: white;
   border-radius: 8px;
   cursor: pointer;
+}
+.celda.final {
+  background-color: red;
+  color: white;
+  font-weight: bold;
+}
+.btn-cambiar {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #2980b9;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-cambiar:hover {
+  background: #3498db;
+}
+.btn-cerrar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-cerrar:hover {
+  background: #e74c3c;
 }
 
