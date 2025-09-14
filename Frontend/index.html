@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Codifica con Guali</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Codifica con Guali</h1>
+        <div class="main-content">
+            <div class="tablero-container">
+                <div id="tablero"></div>
+                <div class="controls">
+                    <button class="btn up"></button>
+                    <button class="btn left"></button>
+                    <button class="btn right"></button>
+                    <button class="btn down"></button>
+                </div>
+                <div class="bottom-bar">
+                    <button class="ejecutar">Ejecutar</button>
+                    <button class="reiniciar">Reiniciar</button>
+                    <button class="configurar">Configurar</button>
+                </div>
+            </div>
+            <div class="panel-lateral">
+                <select class="comandos">
+                    <option>Comando Seleccionados</option>
+                </select>
+                <div class="movimientos">
+                    <p>Movimientos</p>
+                </div>
+                <!-- Imagen decorativa de robot -->
+                <div class="robot-img"></div>
+            </div>
+        </div>
+    </div>
+   <script>
+/* ---------- Datos del tablero ---------- */
+const filas = 5;
+const columnas = 5;
+
+const matriz = [
+  [0, 0, 0, 0, 0],
+  [0, 1, 1, 1, 0],
+  [0, 1, 0, 1, 0],
+  [0, 1, 0, 1, 0],
+  [2, 1, 0, 0, 0]
+];
+// 0: vacío, 1: verde (pista), 2: inicio del robot
+
+/* ---------- Variables globales ---------- */
+const tablero = document.getElementById('tablero');
+tablero.innerHTML = '';
+
+let robotFila = 0;
+let robotCol = 0;
+let inicioFila = 0;
+let inicioCol = 0;
+
+const queue = []; // Cola de comandos: 'mover_arriba', 'mover_abajo', ...
+/* Creamos visualmente el tablero (cada celda) */
+for (let i = 0; i < filas; i++) {
+  for (let j = 0; j < columnas; j++) {
+    const cell = document.createElement('div');
+    cell.classList.add('celda');
+    if (matriz[i][j] === 1) cell.classList.add('verde');
+    if (matriz[i][j] === 2) {
+      cell.classList.add('inicio');
+      cell.textContent = ''; // el texto INICIO se muestra por pseudo-elemento CSS
+      inicioFila = i;
+      inicioCol = j;
+      robotFila = i;
+      robotCol = j;
+      cell.classList.add('robot'); // robot visible al inicio
+    }
+    tablero.appendChild(cell);
+  }
+}
+
+const celdas = tablero.querySelectorAll('.celda');
+const movimientosDiv = document.querySelector('.movimientos');
+
+/* ---------- Helpers para UI de movimientos ---------- */
+function resetMovimientosUI() {
+  movimientosDiv.innerHTML = '<p>Movimientos</p>';
+}
+
+function appendMovimientoQueued(texto) {
+  const p = document.createElement('p');
+  p.textContent = texto;
+  p.classList.add('queued');
+  movimientosDiv.appendChild(p);
+}
+
+/* Añadir comando a la cola (no ejecuta) */
+function queueCommand(nombre) {
+  queue.push(nombre);
+  appendMovimientoQueued(nombre);
+}
+
+/* ---------- Event listeners de las flechas: solo encolan ---------- */
+document.querySelector('.btn.up').addEventListener('click', () => queueCommand('mover_arriba'));
+document.querySelector('.btn.down').addEventListener('click', () => queueCommand('mover_abajo'));
+document.querySelector('.btn.left').addEventListener('click', () => queueCommand('mover_izquierda'));
+document.querySelector('.btn.right').addEventListener('click', () => queueCommand('mover_derecha'));
+
+/* Deshabilitar/habilitar controles (para evitar cambios mientras ejecuta) */
+function setControlsDisabled(value) {
+  // Flechas
+  document.querySelectorAll('.btn.up, .btn.down, .btn.left, .btn.right').forEach(b => b.disabled = value);
+  // Barras inferiores
+  document.querySelector('.ejecutar').disabled = value;
+  document.querySelector('.reiniciar').disabled = value;
+  document.querySelector('.configurar').disabled = value;
+}
+
+/* ---------- Lógica de movimiento real ---------- */
+function canStepTo(fila, col) {
+  // límites
+  if (fila < 0 || fila >= filas || col < 0 || col >= columnas) return false;
+  // la celda debe ser pista (1) o inicio (2)
+  const v = matriz[fila][col];
+  return v === 1 || v === 2;
+}
+
+function moveRobotTo(nf, nc) {
+  // quitar clase robot de la celda actual
+  const celdaActual = celdas[robotFila * columnas + robotCol];
+  celdaActual.classList.remove('robot');
+
+  // actualizar coords
+  robotFila = nf;
+  robotCol = nc;
+
+  // agregar clase robot a la nueva celda
+  const nueva = celdas[robotFila * columnas + robotCol];
+  nueva.classList.add('robot');
+}
+function mostrarModalDerrota() {
+  const modal = document.getElementById('modalDerrota');
+  modal.style.display = 'flex';
+
+  document.getElementById('cerrarModal').onclick = () => {
+    modal.style.display = 'none';
+  };
+}
+
+
+/* Ejecuta la cola secuencialmente */
+async function ejecutarCola() {
+  if (queue.length === 0) return; // nada que hacer
+  setControlsDisabled(true);
+
+  // obtenemos todos los <p> (0 = cabecera "Movimientos")
+  const listaP = () => movimientosDiv.querySelectorAll('p');
+
+  for (let i = 0; i < queue.length; i++) {
+    const cmd = queue[i];
+    const p = listaP()[i + 1]; // +1 porque el primer <p> es "Movimientos"
+    if (p) {
+      p.classList.remove('queued');
+      p.classList.add('current');
+    }
+
+    // calcular nueva posición según comando
+    let nf = robotFila, nc = robotCol;
+    if (cmd === 'mover_arriba') nf--;
+    if (cmd === 'mover_abajo') nf++;
+    if (cmd === 'mover_izquierda') nc--;
+    if (cmd === 'mover_derecha') nc++;
+
+    // validar paso
+    if (!canStepTo(nf, nc)) {
+      if (p) {
+        p.classList.remove('current');
+        p.classList.add('failed');
+      }
+      mostrarModalDerrota();
+    break; // detener ejecución
+    }
+
+    // mover visualmente
+    moveRobotTo(nf, nc);
+
+    // marcar como hecho
+    if (p) {
+      p.classList.remove('current');
+      p.classList.add('done');
+    }
+
+    // pequeña pausa para ver el movimiento (400ms)
+    await new Promise(r => setTimeout(r, 400));
+  }
+
+  // al terminar (exitoso o fallo) dejamos controles activos
+  setControlsDisabled(false);
+  // si quieres vaciar la cola tras la ejecución, descomenta:
+  // queue.length = 0;
+}
+
+/* ---------- Botón Ejecutar ---------- */
+document.querySelector('.ejecutar').addEventListener('click', ejecutarCola);
+
+/* ---------- Botón Reiniciar: vacía cola y regresa a inicio ---------- */
+document.querySelector('.reiniciar').addEventListener('click', () => {
+  // vaciar cola
+  queue.length = 0;
+  resetMovimientosUI();
+
+  // quitar robot de su posición actual
+  const cur = celdas[robotFila * columnas + robotCol];
+  cur.classList.remove('robot');
+
+  // regresar a inicio
+  robotFila = inicioFila;
+  robotCol = inicioCol;
+
+  const inicioCelda = celdas[robotFila * columnas + robotCol];
+  inicioCelda.classList.add('robot');
+});
+
+/* ---------- Inicial: aseguramos header en movimientos ---------- */
+resetMovimientosUI();
+</script>
+<!-- Modal de derrota -->
+<div id="modalDerrota" class="modal-derrota">
+  <div class="modal-contenido">
+    <img src='./images/robot_decorativo.png' alt="Robot" class="robot-img">
+    <h2>¡Perdiste!</h2>
+    <button id="cerrarModal">Cerrar</button>
+  </div>
+</div>
+
+</body>
+</html>
+

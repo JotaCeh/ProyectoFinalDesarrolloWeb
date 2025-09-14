@@ -1,0 +1,318 @@
+/* Estilos generales */
+body {
+    background: #111;
+    color: #ffb833;
+    font-family: 'Comic Sans MS', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    position: relative; /* Para posicionar el robot */
+}
+
+h1 {
+    margin: 20px;
+    font-size: 2em;
+    color: #ffb833;
+}
+
+.main-content {
+    display: flex;
+}
+
+.tablero-container {
+    background: #222;
+    padding: 20px;
+    border-radius: 20px;
+}
+
+/* Tablero matriz */
+#tablero {
+    display: grid;
+    grid-template-columns: repeat(5, 50px);
+    grid-template-rows: repeat(5, 50px);
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.celda {
+    width: 50px;
+    height: 50px;
+    background: #fff;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+}
+
+.celda.verde {
+    background: #93d37b;
+}
+
+.celda.robot {
+    background-image: url('./images/robot_decorativo.png'); /* Imagen robot */
+    background-size: cover;
+    background-color: #fff;
+}
+
+/* Controles - Botones flecha y loop con CSS/texto */
+.controls {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 15px;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 2px 2px 7px #3336;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e2e2e2;
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+}
+
+/* Efecto click */
+.btn:active {
+    box-shadow: 0px 1px 3px #2224;
+    transform: scale(0.95);
+}
+
+/* Colores específicos */
+.btn.up    { background: #61bffb; }
+.btn.left  { background: #ffe761; }
+.btn.right { background: #ffa557; }
+.btn.loop  {
+    background: #758991;
+    color: white;
+    font-size: 16px;
+}
+
+/* Flechas superiores, izquierda y derecha */
+.btn.up::before {
+    content: '';
+    width: 0; 
+    height: 0; 
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 20px solid white;
+}
+
+.btn.left::before {
+    content: '';
+    width: 0; 
+    height: 0; 
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-right: 20px solid white;
+}
+
+.btn.right::before {
+    content: '';
+    width: 0; 
+    height: 0; 
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-left: 20px solid white;
+}
+
+/* Botón hacia abajo con flecha CSS */
+.btn.down {
+    background: #92a2ad; /* gris azulado */
+}
+
+.btn.down::before {
+    content: '';
+    width: 0; 
+    height: 0; 
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 20px solid white;
+}
+
+/* Barra inferior con botones Ejecutar, Reiniciar y Configurar */
+/* Estilo base para los 3 botones */
+.bottom-bar button {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 2px 2px 8px #0003;
+}
+
+/* Ejecutar - verde */
+.ejecutar {
+    background: linear-gradient(135deg, #27ef49, #18a530);
+    color: #fff;
+}
+
+.ejecutar:hover {
+    background: linear-gradient(135deg, #30ff58, #1bb838);
+    transform: translateY(-2px);
+}
+
+/* Reiniciar - rojo */
+.reiniciar {
+    background: linear-gradient(135deg, #e94b3c, #a8160a);
+    color: #fff;
+}
+
+.reiniciar:hover {
+    background: linear-gradient(135deg, #ff5e4c, #c82111);
+    transform: translateY(-2px);
+}
+
+/* Configurar - gris azulado */
+.configurar {
+    background: linear-gradient(135deg, #4c4d4b, #2a2b2a);
+    color: #fff;
+}
+
+.configurar:hover {
+    background: linear-gradient(135deg, #626463, #353635);
+    transform: translateY(-2px);
+}
+
+
+/* Panel lateral */
+.panel-lateral {
+    margin-left: 40px;
+    background: #191919;
+    border-radius: 15px;
+    padding: 20px;
+    width: 280px;
+    min-height: 430px;
+}
+
+.comandos {
+    width: 90%;
+    margin-bottom: 20px;
+    background: #222;
+    color: #fff;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+}
+
+.movimientos {
+    color: #fff;
+    margin-bottom: 40px;
+}
+
+/* Robot imagen posicionada */
+.robot-img {
+    position: absolute;
+    right: 24px;
+    bottom: 18px;
+    width: 120px;
+    height: 120px;
+    background-image: url('./images/robot_decorativo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 10;
+}
+
+.celda.inicio {
+  background-color: #4caf50;       /* Verde de fondo */
+  position: relative;              /* Para colocar el texto dentro */
+}
+
+.celda.inicio::before {
+  content: "INICIO";
+  position: absolute;
+  top: 2px;                         /* Lo sube arriba de la celda */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;                  /* Texto más pequeño */
+  color: white;
+  font-weight: bold;
+  pointer-events: none;             /* No bloquea clics */
+}
+/* Movimientos: estilos para estados de cada instrucción */
+.movimientos p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+/* estado encolado (presionado pero no ejecutado) */
+.movimientos p.queued {
+  color: #ffd27a;
+}
+
+/* estado actual (ejecutando) */
+.movimientos p.current {
+  color: #61bffb;
+  font-weight: bold;
+}
+
+/* ejecutado correctamente */
+.movimientos p.done {
+  color: #93d37b;
+  text-decoration: line-through;
+}
+
+/* fallo */
+.movimientos p.failed {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+/* deshabilitar botones (aplicar estilo visible) */
+button:disabled {
+  opacity: 0.5;
+  transform: none;
+  cursor: not-allowed;
+}
+/* --- Modal derrota --- */
+.modal-derrota {
+  display: none; /* oculto por defecto */
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-contenido {
+  background: #222;
+  padding: 20px 30px;
+  border-radius: 15px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(0,0,0,0.4);
+}
+
+.modal-contenido .robot-img {
+  width: 80px;
+  margin-bottom: 15px;
+}
+
+.modal-contenido h2 {
+  margin: 0 0 15px 0;
+}
+
+.modal-contenido button {
+  padding: 8px 15px;
+  background: #ff6b6b;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+

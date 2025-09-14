@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel de Configuración</title>
+  <style>
+    body {
+      background: #111;
+      color: #f5f5f5;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 100px;
+    }
+
+    h1 {
+      color: #ffb833;
+      margin-bottom: 50px;
+    }
+
+    .btn {
+      display: block;
+      width: 200px;
+      margin: 15px auto;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #4c4d4b, #2a2b2a);
+      color: #fff;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #626463, #353635);
+      transform: translateY(-2px);
+    }
+
+    .logout {
+      background: linear-gradient(135deg, #e94b3c, #a8160a);
+    }
+
+    .logout:hover {
+      background: linear-gradient(135deg, #ff5e4c, #c82111);
+    }
+  </style>
+</head>
+<body>
+  <h1>Bienvenido Administrador</h1>
+
+  <button class="btn logout" onclick="cerrarSesion()">Cerrar sesión</button>
+  <button class="btn">Nueva pista</button>
+  <button class="btn">Borrar pista</button>
+
+  <script>
+    function cerrarSesion() {
+      window.location.href = 'index.html'; // Regresa al index
+    }
+  </script>
+</body>
+</html>
